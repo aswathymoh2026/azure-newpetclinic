@@ -15,7 +15,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
 
 # Stage 2: Runtime
-FROM openjdk:11-jre-slim
+FROM eclipse-temurin:21-jre
 
 LABEL maintainer="DevOps Team"
 LABEL description="Spring PetClinic Application"
