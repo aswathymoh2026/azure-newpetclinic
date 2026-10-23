@@ -166,13 +166,14 @@ pipeline {
                             
                             if [ ! -f "Dockerfile" ]; then
                                 cat > Dockerfile << 'EOF'
-FROM eclipse-temurin:21-jre-slim
+FROM openjdk:21-jre-slim
 LABEL maintainer="DevOps Team"
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app.jar"]
 EOF
+                            fi
                             
                             echo "Building Docker image..."
                             docker build -t ${APP_NAME}:${DOCKER_IMAGE_TAG} .
