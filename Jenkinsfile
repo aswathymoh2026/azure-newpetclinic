@@ -162,18 +162,15 @@ pipeline {
                     echo "========== Stage: Build Docker Image =========="
                     try {
                         sh '''
-                         echo "Verifying Dockerfile exists in workspace..."
-                         if [ ! -f Dockerfile ]; then
-                             echo "ERROR: Dockerfile not found in repository root!"
-                             exit 1
-                         fi
-
-                         echo "Building Docker image using committed multi-stage Dockerfile..."
-                         docker build -t ${APP_NAME}:${DOCKER_IMAGE_TAG} -t ${APP_NAME}:latest .
-
-                         echo "✓ Docker image built successfully"
-                         docker images | grep ${APP_NAME}
-                     '''
+                            echo "Checking Dockerfile contents in workspace:"
+                            cat Dockerfile
+                            
+                            echo "Building Docker image using multi-stage Dockerfile..."
+                            docker build -t ${APP_NAME}:${DOCKER_IMAGE_TAG} -t ${APP_NAME}:latest .
+                            
+                            echo "✓ Docker image built successfully"
+                            docker images | grep ${APP_NAME}
+                        '''
                     } catch (Exception e) {
                         echo "✗ Docker build failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
