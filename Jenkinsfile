@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     parameters {
-        string(name: 'GIT_REPO', defaultValue: 'https://github.com/spring-projects/spring-petclinic.git', description: 'GitHub Repository URL')
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/aswathymoh2026/azure-newpetclinic.git', description: 'GitHub Repository URL')
         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'GitHub Branch')
         string(name: 'REGISTRY_URL', defaultValue: 'petclinicacr20923.azurecr.io', description: 'Azure Container Registry URL')
         string(name: 'REGISTRY_USERNAME', defaultValue: 'petclinicacr20923', description: 'ACR Username')
@@ -173,7 +173,6 @@ COPY ${JAR_FILE} app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app.jar"]
 EOF
-                            fi
                             
                             echo "Building Docker image..."
                             docker build -t ${APP_NAME}:${DOCKER_IMAGE_TAG} .
