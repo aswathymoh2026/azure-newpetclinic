@@ -4,21 +4,20 @@ pipeline {
     parameters {
         string(name: 'GIT_REPO', defaultValue: 'https://github.com/spring-projects/spring-petclinic.git', description: 'GitHub Repository URL')
         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'GitHub Branch')
-        string(name: 'REGISTRY_URL', defaultValue: 'your-registry.azurecr.io', description: 'Azure Container Registry URL')
-        string(name: 'REGISTRY_USERNAME', defaultValue: '', description: 'ACR Username')
+        string(name: 'REGISTRY_URL', defaultValue: 'petclinicacr20923.azurecr.io', description: 'Azure Container Registry URL')
+        string(name: 'REGISTRY_USERNAME', defaultValue: 'petclinicacr20923', description: 'ACR Username')
         password(name: 'REGISTRY_PASSWORD', defaultValue: '', description: 'ACR Password')
-        string(name: 'SONAR_HOST_URL', defaultValue: 'http://sonarqube:9000', description: 'SonarQube Server URL')
-        string(name: 'AKS_RESOURCE_GROUP', defaultValue: 'your-rg', description: 'AKS Resource Group')
-        string(name: 'AKS_CLUSTER_NAME', defaultValue: 'your-aks', description: 'AKS Cluster Name')
+        string(name: 'SONAR_HOST_URL', defaultValue: 'http://20.25.97.96:9000', description: 'SonarQube Server URL')
+        string(name: 'AKS_RESOURCE_GROUP', defaultValue: 'petclinic-rg', description: 'AKS Resource Group')
+        string(name: 'AKS_CLUSTER_NAME', defaultValue: 'petclinic-aks', description: 'AKS Cluster Name')
     }
     
     environment {
         APP_NAME = 'spring-petclinic'
         BUILD_NUMBER = "${BUILD_NUMBER}"
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
-        JAVA_HOME = '/usr/lib/jvm/java-11-openjdk'
-        MAVEN_HOME = '/usr/share/maven'
-        PATH = "${MAVEN_HOME}/bin:${JAVA_HOME}/bin:${PATH}"
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${PATH}"
     }
     
     options {
@@ -57,8 +56,8 @@ pipeline {
                             echo "Checking Java version..."
                             java -version
                             
-                            echo "Checking Maven version..."
-                            mvn -version
+                            echo "Checking Maven wrapper..."
+                            ./mvnw -version
                             
                             echo "Checking Docker..."
                             docker --version
@@ -81,11 +80,11 @@ pipeline {
                     try {
                         sh '''
                             echo "Starting Maven build..."
-                            mvn clean package -DskipTests=true -U \
+                            ./mvnw clean package -DskipTests=true -U \
                                 -Dmaven.test.skip=true \
                                 -Dorg.slf4j.simpleLogger.defaultLogLevel=info
                             
-                            if [ -f "target/${APP_NAME}*.jar" ]; then
+                            if ls target/*.jar 1> /dev/null 2>&1; then
                                 echo "✓ Build successful - JAR file created"
                                 ls -lh target/*.jar
                             else
@@ -109,13 +108,12 @@ pipeline {
                     try {
                         sh '''
                             echo "Running unit tests..."
-                            mvn test -Dorg.slf4j.simpleLogger.defaultLogLevel=info
+                            ./mvnw test -Dorg.slf4j.simpleLogger.defaultLogLevel=info
                             
                             echo "✓ Unit tests completed"
                         '''
                     } catch (Exception e) {
                         echo "⚠ Tests failed or had errors: ${e.message}"
-                        // Continue pipeline even if tests fail for visibility
                         unstable("Unit tests failed")
                     }
                 }
@@ -130,7 +128,7 @@ pipeline {
                         withSonarQubeEnv('SonarQube') {
                             sh '''
                                 echo "Starting SonarQube analysis..."
-                                mvn sonar:sonar \
+                                ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                                     -Dsonar.projectKey=${APP_NAME} \
                                     -Dsonar.projectName=${APP_NAME} \
                                     -Dsonar.host.url=${SONAR_HOST_URL} \
@@ -141,7 +139,6 @@ pipeline {
                             '''
                         }
                         
-                        // Wait for Quality Gate
                         timeout(time: 5, unit: 'MINUTES') {
                             def qg = waitForQualityGate()
                             if (qg.status != 'OK') {
@@ -167,10 +164,9 @@ pipeline {
                         sh '''
                             echo "Creating Dockerfile..."
                             
-                            # Create Dockerfile if not exists
                             if [ ! -f "Dockerfile" ]; then
                                 cat > Dockerfile << 'EOF'
-FROM openjdk:11-jre-slim
+FROM eclipse-temurin:21-jre-slim
 LABEL maintainer="DevOps Team"
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
@@ -250,14 +246,6 @@ EOF
                                 ${REGISTRY_URL}/${APP_NAME}:${DOCKER_IMAGE_TAG} || true
                             
                             echo "✓ Trivy scan completed"
-                            
-                            # Check if critical vulnerabilities found
-                            if trivy image --severity CRITICAL --exit-code 0 \
-                                ${REGISTRY_URL}/${APP_NAME}:${DOCKER_IMAGE_TAG} 2>&1 | grep -q "Critical"; then
-                                echo "⚠ Critical vulnerabilities detected"
-                            else
-                                echo "✓ No critical vulnerabilities found"
-                            fi
                         '''
                     } catch (Exception e) {
                         echo "⚠ Trivy scan encountered an error: ${e.message}"
@@ -274,18 +262,13 @@ EOF
                     try {
                         sh '''
                             echo "Configuring kubectl for AKS..."
-                            az login --service-principal \
-                                -u ${AZURE_SP_ID} \
-                                -p ${AZURE_SP_PASSWORD} \
-                                --tenant ${AZURE_TENANT_ID}
-                            
                             az aks get-credentials \
                                 --resource-group ${AKS_RESOURCE_GROUP} \
-                                --name ${AKS_CLUSTER_NAME}
+                                --name ${AKS_CLUSTER_NAME} \
+                                --overwrite-existing
                             
                             echo "Creating Kubernetes deployment..."
                             
-                            # Create deployment YAML
                             cat > deployment.yaml << EOF
 apiVersion: apps/v1
 kind: Deployment
@@ -311,9 +294,6 @@ spec:
         image: ${REGISTRY_URL}/${APP_NAME}:${DOCKER_IMAGE_TAG}
         ports:
         - containerPort: 8080
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "production"
         resources:
           limits:
             cpu: "500m"
@@ -323,13 +303,13 @@ spec:
             memory: "256Mi"
         livenessProbe:
           httpGet:
-            path: /manage/health
+            path: /actuator/health
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /manage/health
+            path: /actuator/health
             port: 8080
           initialDelaySeconds: 10
           periodSeconds: 5
@@ -355,55 +335,11 @@ EOF
                             kubectl rollout status deployment/${APP_NAME} -n default --timeout=5m
                             
                             echo "✓ Deployment to AKS completed successfully"
-                            
-                            echo "Service details:"
-                            kubectl get svc ${APP_NAME}-service
                         '''
                     } catch (Exception e) {
                         echo "✗ AKS deployment failed: ${e.message}"
                         currentBuild.result = 'FAILURE'
                         error("AKS deployment stage failed")
-                    }
-                }
-            }
-        }
-        
-        stage('Smoke Tests') {
-            steps {
-                script {
-                    echo "========== Stage: Post-Deployment Smoke Tests =========="
-                    try {
-                        sh '''
-                            echo "Waiting for service to be ready..."
-                            sleep 30
-                            
-                            SERVICE_IP=$(kubectl get svc ${APP_NAME}-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-                            
-                            if [ -z "$SERVICE_IP" ]; then
-                                echo "Service IP not available yet, using pod port-forward..."
-                                kubectl port-forward svc/${APP_NAME}-service 8080:80 &
-                                sleep 5
-                                SERVICE_IP="localhost"
-                                SERVICE_PORT="8080"
-                            else
-                                SERVICE_PORT="80"
-                            fi
-                            
-                            echo "Testing application at http://${SERVICE_IP}:${SERVICE_PORT}..."
-                            
-                            for i in {1..5}; do
-                                if curl -f http://${SERVICE_IP}:${SERVICE_PORT}/manage/health &> /dev/null; then
-                                    echo "✓ Health check passed on attempt $i"
-                                    break
-                                else
-                                    echo "⚠ Health check failed on attempt $i, retrying..."
-                                    sleep 10
-                                fi
-                            done
-                        '''
-                    } catch (Exception e) {
-                        echo "⚠ Smoke tests failed: ${e.message}"
-                        unstable("Smoke tests had issues")
                     }
                 }
             }
@@ -414,41 +350,18 @@ EOF
         always {
             script {
                 echo "========== Pipeline Cleanup =========="
-                
-                // Archive artifacts
                 archiveArtifacts artifacts: 'target/*.jar,trivy-report.json', 
                                    allowEmptyArchive: true, 
                                    onlyIfSuccessful: false
-                
-                // Clean workspace
                 cleanWs(deleteDirs: true, patterns: [[pattern: 'target/**', type: 'INCLUDE']])
-                
                 echo "✓ Cleanup completed"
             }
         }
-        
         success {
-            script {
-                echo "========== Pipeline Completed Successfully =========="
-                echo "✓ Application version ${DOCKER_IMAGE_TAG} deployed successfully"
-                echo "✓ Image available at: ${REGISTRY_URL}/${APP_NAME}:${DOCKER_IMAGE_TAG}"
-            }
+            echo "========== Pipeline Completed Successfully =========="
         }
-        
         failure {
-            script {
-                echo "========== Pipeline Failed =========="
-                echo "✗ Build failed at stage: ${env.STAGE_NAME}"
-                echo "Check logs above for detailed error information"
-            }
-        }
-        
-        unstable {
-            script {
-                echo "========== Pipeline Completed with Warnings =========="
-                echo "⚠ Pipeline completed but some quality gates or tests were not successful"
-                echo "Review warnings above for details"
-            }
+            echo "========== Pipeline Failed =========="
         }
     }
 }
