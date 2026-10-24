@@ -4,7 +4,7 @@ pipeline {
     parameters {
         string(name: 'GIT_REPO', defaultValue: 'https://github.com/aswathymoh2026/azure-newpetclinic.git', description: 'GitHub Repository URL')
         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'GitHub Branch')
-        string(name: 'REGISTRY_URL', defaultValue: 'petclinicacr20923.azurecr.io', description: 'Azure Container Registry URL')
+        string(name: 'REGISTRY_URL', defaultValue: 'petclinicacr27360.azurecr.io', description: 'Azure Container Registry URL')
         string(name: 'REGISTRY_USERNAME', defaultValue: 'petclinicacr27360', description: 'ACR Username')
         password(name: 'REGISTRY_PASSWORD', defaultValue: '', description: 'ACR Password')
         string(name: 'SONAR_HOST_URL', defaultValue: 'http://20.119.57.204:9000', description: 'SonarQube Server URL')
