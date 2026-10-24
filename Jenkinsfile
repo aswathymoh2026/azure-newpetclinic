@@ -57,8 +57,8 @@ pipeline {
                             echo "Checking Java version..."
                             java -version
                             
-                            echo "Checking Maven wrapper..."
-                            ./mvnw -version
+                            echo "Checking Maven..."
+                            mvn -version
                             
                             echo "Checking Docker..."
                             docker --version
@@ -81,7 +81,7 @@ pipeline {
                     try {
                         sh '''
                             echo "Starting Maven build..."
-                            ./mvnw clean package -DskipTests=true -U \
+                            mvn clean package -DskipTests=true -U \
                                 -Dmaven.test.skip=true \
                                 -Dorg.slf4j.simpleLogger.defaultLogLevel=info
                             
@@ -109,7 +109,7 @@ pipeline {
                     try {
                         sh '''
                             echo "Running unit tests..."
-                            ./mvnw test -Dorg.slf4j.simpleLogger.defaultLogLevel=info
+                            mvn test -Dorg.slf4j.simpleLogger.defaultLogLevel=info
                             
                             echo "✓ Unit tests completed"
                         '''
@@ -129,7 +129,7 @@ pipeline {
                         withSonarQubeEnv('SonarQube') {
                             sh '''
                                 echo "Starting SonarQube analysis..."
-                                ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                                     -Dsonar.projectKey=${APP_NAME} \
                                     -Dsonar.projectName=${APP_NAME} \
                                     -Dsonar.host.url=${SONAR_HOST_URL} \
@@ -341,8 +341,8 @@ EOF
             script {
                 echo "========== Pipeline Cleanup =========="
                 archiveArtifacts artifacts: 'target/*.jar,trivy-report.json', 
-                                   allowEmptyArchive: true, 
-                                   onlyIfSuccessful: false
+                                         allowEmptyArchive: true, 
+                                         onlyIfSuccessful: false
                 cleanWs(deleteDirs: true, patterns: [[pattern: 'target/**', type: 'INCLUDE']])
                 echo "✓ Cleanup completed"
             }
