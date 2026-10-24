@@ -10,6 +10,7 @@ pipeline {
         string(name: 'SONAR_HOST_URL', defaultValue: 'http://20.25.97.96:9000', description: 'SonarQube Server URL')
         string(name: 'AKS_RESOURCE_GROUP', defaultValue: 'petclinic-rg', description: 'AKS Resource Group')
         string(name: 'AKS_CLUSTER_NAME', defaultValue: 'petclinic-aks', description: 'AKS Cluster Name')
+        string(name: 'APP_NAME', defaultValue: 'spring-petclinic', description: 'APP Name')
     }
     
     environment {
