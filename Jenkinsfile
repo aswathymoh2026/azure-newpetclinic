@@ -3,7 +3,7 @@ pipeline {
     
     parameters {
         string(name: 'GIT_REPO', defaultValue: 'https://github.com/aswathymoh2026/azure-newpetclinic.git', description: 'GitHub Repository URL')
-        string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'GitHub Branch')
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'GitHub Branch')
         string(name: 'REGISTRY_URL', defaultValue: 'petclinicacr27360.azurecr.io', description: 'Azure Container Registry URL')
         string(name: 'REGISTRY_USERNAME', defaultValue: 'petclinicacr27360', description: 'ACR Username')
         password(name: 'REGISTRY_PASSWORD', defaultValue: '', description: 'ACR Password')
@@ -19,7 +19,7 @@ pipeline {
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
         JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
         MAVEN_HOME = '/usr/share/maven'
-        PATH = "${JAVA_HOME}/bin:${PATH}"
+        PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${PATH}"
     }
     
     options {
@@ -58,11 +58,8 @@ pipeline {
                             echo "Checking Java version..."
                             java -version
                             
-                            echo "Ensuring Maven wrapper is executable..."
-                            chmod +x mvnw
-                            
-                            echo "Checking Maven wrapper..."
-                            ./mvnw -version
+                            echo "Checking Maven version..."
+                            mvn -version
                             
                             echo "Checking Docker..."
                             docker --version
@@ -85,7 +82,7 @@ pipeline {
                     try {
                         sh '''
                             echo "Starting Maven build..."
-                            ./mvnw clean package -DskipTests=true -U \
+                            mvn clean package -DskipTests=true -U \
                                 -Dmaven.test.skip=true \
                                 -Dorg.slf4j.simpleLogger.defaultLogLevel=info
                             
@@ -113,7 +110,7 @@ pipeline {
                     try {
                         sh '''
                             echo "Running unit tests..."
-                            ./mvnw test -Dorg.slf4j.simpleLogger.defaultLogLevel=info
+                            mvn test -Dorg.slf4j.simpleLogger.defaultLogLevel=info
                             
                             echo "✓ Unit tests completed"
                         '''
@@ -133,7 +130,7 @@ pipeline {
                         withSonarQubeEnv('SonarQube') {
                             sh '''
                                 echo "Starting SonarQube analysis..."
-                                ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
                                     -Dsonar.projectKey=${APP_NAME} \
                                     -Dsonar.projectName=${APP_NAME} \
                                     -Dsonar.host.url=${SONAR_HOST_URL} \
@@ -356,8 +353,8 @@ EOF
             script {
                 echo "========== Pipeline Cleanup =========="
                 archiveArtifacts artifacts: 'target/*.jar,trivy-report.json', 
-                                   allowEmptyArchive: true, 
-                                   onlyIfSuccessful: false
+                                 allowEmptyArchive: true, 
+                                 onlyIfSuccessful: false
                 cleanWs(deleteDirs: true, patterns: [[pattern: 'target/**', type: 'INCLUDE']])
                 echo "✓ Cleanup completed"
             }
