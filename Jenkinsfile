@@ -7,7 +7,7 @@ pipeline {
         string(name: 'REGISTRY_URL', defaultValue: 'petclinicacr20923.azurecr.io', description: 'Azure Container Registry URL')
         string(name: 'REGISTRY_USERNAME', defaultValue: 'petclinicacr27360', description: 'ACR Username')
         password(name: 'REGISTRY_PASSWORD', defaultValue: '', description: 'ACR Password')
-        string(name: 'SONAR_HOST_URL', defaultValue: 'http://20.25.97.96:9000', description: 'SonarQube Server URL')
+        string(name: 'SONAR_HOST_URL', defaultValue: 'http://20.119.57.204:9000', description: 'SonarQube Server URL')
         string(name: 'AKS_RESOURCE_GROUP', defaultValue: 'petclinic-rg', description: 'AKS Resource Group')
         string(name: 'AKS_CLUSTER_NAME', defaultValue: 'petclinic-aks', description: 'AKS Cluster Name')
         string(name: 'APP_NAME', defaultValue: 'spring-petclinic', description: 'APP Name')
