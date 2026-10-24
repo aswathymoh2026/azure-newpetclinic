@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     parameters {
-        string(name: 'GIT_REPO', defaultValue: 'https://github.com/aswathymoh2026/azure-newpetclinic.git', description: 'GitHub Repository URL')
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/spring-projects/spring-petclinic.git', description: 'GitHub Repository URL')
         string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'GitHub Branch')
         string(name: 'REGISTRY_URL', defaultValue: 'petclinicacr27360.azurecr.io', description: 'Azure Container Registry URL')
         string(name: 'REGISTRY_USERNAME', defaultValue: 'petclinicacr27360', description: 'ACR Username')
