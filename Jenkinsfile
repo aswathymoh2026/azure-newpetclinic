@@ -81,6 +81,12 @@ pipeline {
                     echo "========== Stage: Maven Build =========="
                     try {
                         sh '''
+                            echo "Current directory:"
+                            pwd
+                            
+                            echo "Workspace contents:"
+                            ls -la
+                            
                             echo "Starting Maven build..."
                             mvn clean package -DskipTests=true -U \
                                 -Dmaven.test.skip=true \
