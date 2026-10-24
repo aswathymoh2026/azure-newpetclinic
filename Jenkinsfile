@@ -58,6 +58,9 @@ pipeline {
                             echo "Checking Java version..."
                             java -version
                             
+                            echo "Ensuring Maven wrapper is executable..."
+                            chmod +x mvnw
+                            
                             echo "Checking Maven wrapper..."
                             ./mvnw -version
                             
