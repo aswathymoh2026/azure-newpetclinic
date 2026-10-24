@@ -18,6 +18,7 @@ pipeline {
         BUILD_NUMBER = "${BUILD_NUMBER}"
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
         JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        MAVEN_HOME = '/usr/share/maven'
         PATH = "${JAVA_HOME}/bin:${PATH}"
     }
     
